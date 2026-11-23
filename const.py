@@ -20,6 +20,15 @@ DATA_UPDATE_COORDINATORS = "update_coordinators"
 INVERTER_UPDATE_INTERVAL = timedelta(seconds=30)
 POWER_METER_UPDATE_INTERVAL = timedelta(seconds=30)
 ENERGY_STORAGE_UPDATE_INTERVAL = timedelta(seconds=30)
+
+# Every device on one Modbus connection is polled over that single link.
+# With several inverters in an RS485 cascade behind one dongle, a 30s interval
+# leaves no headroom (eg. 3 inverters + batteries = 7 coordinators x ~4.3s per
+# read = ~30s per cycle), which causes timeouts and unavailable entities.
+# The fast intervals above are therefore scaled by the number of unit ids:
+# interval = max(base, PER_UNIT_UPDATE_INTERVAL x number of unit ids).
+# 1 unit id: 30s (unchanged), 2: 40s, 3: 60s, 4: 80s.
+PER_UNIT_UPDATE_INTERVAL = timedelta(seconds=20)
 # configuration can only change when edited through FusionSolar web or app
 CONFIGURATION_UPDATE_INTERVAL = timedelta(minutes=15)
 # optimizer data is only refreshed every 5 minutes by the inverter.

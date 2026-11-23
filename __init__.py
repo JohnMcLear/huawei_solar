@@ -1,6 +1,6 @@
 """The Huawei Solar integration."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
@@ -51,6 +51,7 @@ from .const import (
     ENERGY_STORAGE_UPDATE_INTERVAL,
     INVERTER_UPDATE_INTERVAL,
     OPTIMIZER_UPDATE_INTERVAL,
+    PER_UNIT_UPDATE_INTERVAL,
     POWER_METER_UPDATE_INTERVAL,
     SUB_DEVICE_RETRY_INTERVAL,
 )
@@ -163,6 +164,12 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, minor_version=2)
 
     return True
+
+
+def _scaled_update_interval(entry: ConfigEntry, base: timedelta) -> timedelta:
+    """Scale a fast polling interval by the number of devices sharing the link."""
+    unit_count = max(1, len(entry.data.get(CONF_SLAVE_IDS) or []))
+    return max(base, PER_UNIT_UPDATE_INTERVAL * unit_count)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HuaweiSolarConfigEntry) -> bool:
@@ -490,7 +497,7 @@ async def _setup_inverter_device_data(
         _LOGGER,
         device=device,
         name=f"{device.serial_number}_data_update_coordinator",
-        update_interval=INVERTER_UPDATE_INTERVAL,
+        update_interval=_scaled_update_interval(entry, INVERTER_UPDATE_INTERVAL),
     )
 
     # Add power meter device if a power meter is detected
@@ -507,7 +514,7 @@ async def _setup_inverter_device_data(
             _LOGGER,
             device=device,
             name=f"{device.serial_number}_power_meter_data_update_coordinator",
-            update_interval=POWER_METER_UPDATE_INTERVAL,
+            update_interval=_scaled_update_interval(entry, POWER_METER_UPDATE_INTERVAL),
         )
     else:
         power_meter_device_info = None
@@ -530,7 +537,7 @@ async def _setup_inverter_device_data(
             _LOGGER,
             device=device,
             name=f"{device.serial_number}_battery_data_update_coordinator",
-            update_interval=ENERGY_STORAGE_UPDATE_INTERVAL,
+            update_interval=_scaled_update_interval(entry, ENERGY_STORAGE_UPDATE_INTERVAL),
         )
     else:
         battery_device_info = None
@@ -729,7 +736,7 @@ async def _setup_device_data(
         _LOGGER,
         device=device,
         name=f"{device.serial_number}_data_update_coordinator",
-        update_interval=INVERTER_UPDATE_INTERVAL,
+        update_interval=_scaled_update_interval(entry, INVERTER_UPDATE_INTERVAL),
     )
 
     if entry.data.get(CONF_ENABLE_PARAMETER_CONFIGURATION, False):
