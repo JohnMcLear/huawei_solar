@@ -1,5 +1,5 @@
 {
-    "name": "Huawei Solar",
+    "name": "Huawei Solar (JohnMcLear fork)",
     "content_in_root": true,
     "render_readme": true,
     "homeassistant": "2026.9.0"
